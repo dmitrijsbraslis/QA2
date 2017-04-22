@@ -5,6 +5,10 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import java.util.List;
 
 /**
  * Testing comments on delfi.lv
@@ -12,6 +16,7 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 public class DelfiTest {
 
     private static final By COUNTER = By.className("comment-count");
+    private static final By COMMENT_PAGE_COUNTERS = By.xpath("//*[contains(@class, 'comment-thread-switcher-selected-reg ')]/a/span");
     private static final Logger LOGGER = Logger.getLogger(DelfiTest.class);
     private int commentCount;
 
@@ -40,15 +45,25 @@ public class DelfiTest {
         LOGGER.info("Comment count on article page is correct!");
 
         LOGGER.info("Moving to article comment page");
+        driver.findElement(COUNTER).click();
+        boolean waitFor = (new WebDriverWait(driver, 10)).until(new ExpectedCondition<Boolean>() {
+            public Boolean apply(WebDriver driver) {
+                return driver.findElement(COMMENT_PAGE_COUNTERS).isDisplayed();
+            }
+        });
 
         LOGGER.info("Getting registered users comment count");
+        List<WebElement> counters = driver.findElements(COMMENT_PAGE_COUNTERS);
+        int registComCnt = removeChars(counters.get(0).getText());
 
         LOGGER.info("Getting unregistered users comment count");
+        int unRegistComCnt = removeChars(counters.get(1).getText());
 
         LOGGER.info("Checking whole comment count");
+        Assert.assertEquals("Wrong comment count on comment page", commentCount, registComCnt+unRegistComCnt, 0);
 
         LOGGER.info("We are closing our browser");
-//        driver.quit();
+        driver.quit();
     }
 
     /**
@@ -59,9 +74,18 @@ public class DelfiTest {
     private Integer getCommentCount(WebDriver driver) {
         WebElement counter = driver.findElement(COUNTER);
         String counterString = counter.getText();
-        Integer count = Integer.parseInt(counterString.substring(1, counterString.length()-1));
+        Integer count = removeChars(counterString);
         LOGGER.info("Article comment count is " + count);
         return count;
+    }
+
+    /**
+     * Removes all unnecessary chars
+     *
+     * @return - comment count
+     */
+    private Integer removeChars(String cuntStr) {
+        return Integer.parseInt(cuntStr.substring(1, cuntStr.length()-1));
     }
 
     /**
